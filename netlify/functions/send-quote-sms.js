@@ -1,5 +1,5 @@
-// Netlify Function to send booking SMS notification
-// This function will be called when a customer submits a booking
+// Netlify Function to send quote request SMS notification
+// This function will be called when a customer submits a quote request
 
 exports.handler = async (event, context) => {
   // Only allow POST requests
@@ -11,41 +11,28 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Parse the booking data from the request
-    const bookingData = JSON.parse(event.body)
+    // Parse the quote request data from the request
+    const quoteData = JSON.parse(event.body)
     
     const {
       firstName,
-      surname,
-      mobile,
+      lastName,
       email,
-      address,
-      postCode,
+      phone,
       service,
-      scheduleDate
-    } = bookingData
-
-    // Format the schedule date
-    const formattedDate = new Date(scheduleDate).toLocaleString('en-GB', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+      message
+    } = quoteData
 
     // Create SMS message
-    const smsMessage = `🔔 NEW BOOKING ALERT!
+    const smsMessage = `🔔 NEW QUOTE REQUEST!
 
-Customer: ${firstName} ${surname}
-Mobile: ${mobile}
+Customer: ${firstName} ${lastName}
+Phone: ${phone}
 Email: ${email}
-Address: ${address}, ${postCode}
 Service: ${service}
-Scheduled: ${formattedDate}
+Message: ${message}
 
-Please contact customer to confirm.`
+Please contact customer within 24 hours.`
 
     // Business phone number to receive SMS (international format)
     const businessPhone = '+447424185232'
@@ -60,9 +47,9 @@ Please contact customer to confirm.`
 
     // Check if Twilio credentials are configured
     if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
-      console.log('Twilio not configured. Booking data:', bookingData)
+      console.log('Twilio not configured. Quote data:', quoteData)
       
-      // For testing: log the booking and return success
+      // For testing: log the quote and return success
       // In production, this should fail if SMS can't be sent
       console.log('SMS would be sent to:', businessPhone)
       console.log('Message:', smsMessage)
@@ -75,8 +62,8 @@ Please contact customer to confirm.`
         },
         body: JSON.stringify({
           success: true,
-          message: 'Booking received (SMS not configured)',
-          bookingData
+          message: 'Quote request received (SMS not configured)',
+          quoteData
         })
       }
     }
@@ -114,13 +101,13 @@ Please contact customer to confirm.`
       },
       body: JSON.stringify({
         success: true,
-        message: 'Booking confirmed and SMS sent',
+        message: 'Quote request confirmed and SMS sent',
         messageSid: result.sid
       })
     }
 
   } catch (error) {
-    console.error('Error processing booking:', error)
+    console.error('Error processing quote request:', error)
     
     return {
       statusCode: 500,
@@ -130,10 +117,9 @@ Please contact customer to confirm.`
       },
       body: JSON.stringify({
         success: false,
-        error: 'Failed to process booking',
+        error: 'Failed to process quote request',
         details: error.message
       })
     }
   }
 }
-

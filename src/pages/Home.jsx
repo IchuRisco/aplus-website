@@ -123,7 +123,7 @@ function Home() {
   }
 
   // Form submission handler
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
     const data = {
@@ -135,10 +135,29 @@ function Home() {
       message: formData.get('message')
     }
     
-    console.log('Form submitted:', data)
-    alert('Thank you for your message! We will get back to you within 24 hours.')
-    e.target.reset()
-    playClickSound()
+    try {
+      // Send quote request to Netlify function
+      const response = await fetch('/.netlify/functions/send-quote-sms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (response.ok) {
+        alert('Thank you for your message! We will get back to you within 24 hours.')
+        e.target.reset()
+        playClickSound()
+      } else {
+        alert('Thank you for your message! We have received your request and will contact you soon.')
+        e.target.reset()
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error)
+      alert('Thank you for your message! We have received your request and will contact you soon.')
+      e.target.reset()
+    }
   }
 
   const services = {
