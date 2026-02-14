@@ -1,4 +1,4 @@
-// Netlify Function to send quote request SMS notification via Plivo
+// Netlify Function to send quote request SMS notification via MessageBird
 // This function will be called when a customer submits a quote request
 
 const https = require('https');
@@ -43,14 +43,12 @@ Please contact customer within 24 hours.`;
     // Business phone number to receive SMS (international format)
     const businessPhone = '+447424185232';
 
-    // Plivo credentials from environment variables
-    const PLIVO_AUTH_ID = process.env.PLIVO_AUTH_ID;
-    const PLIVO_AUTH_TOKEN = process.env.PLIVO_AUTH_TOKEN;
-    const PLIVO_PHONE_NUMBER = process.env.PLIVO_PHONE_NUMBER;
+    // MessageBird credentials from environment variables
+    const MESSAGEBIRD_API_KEY = process.env.MESSAGEBIRD_API_KEY;
 
-    // Check if Plivo credentials are configured
-    if (!PLIVO_AUTH_ID || !PLIVO_AUTH_TOKEN || !PLIVO_PHONE_NUMBER) {
-      console.log('Plivo not configured. Quote data:', quoteData);
+    // Check if MessageBird credentials are configured
+    if (!MESSAGEBIRD_API_KEY) {
+      console.log('MessageBird not configured. Quote data:', quoteData);
       console.log('SMS would be sent to:', businessPhone);
       console.log('Message:', smsMessage);
       
@@ -68,28 +66,26 @@ Please contact customer within 24 hours.`;
       };
     }
 
-    // Prepare Plivo API request
-    const auth = Buffer.from(`${PLIVO_AUTH_ID}:${PLIVO_AUTH_TOKEN}`).toString('base64');
-    
+    // Prepare MessageBird API request
     const postData = JSON.stringify({
-      src: PLIVO_PHONE_NUMBER,
-      dst: businessPhone,
-      text: smsMessage
+      originator: 'Aplus+',
+      recipients: [businessPhone],
+      body: smsMessage
     });
 
     const options = {
-      hostname: 'api.plivo.com',
+      hostname: 'rest.messagebird.com',
       port: 443,
-      path: `/v1/Account/${PLIVO_AUTH_ID}/Message/`,
+      path: '/messages',
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${auth}`,
+        'Authorization': `AccessKey ${MESSAGEBIRD_API_KEY}`,
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(postData)
       }
     };
 
-    // Send SMS via Plivo API
+    // Send SMS via MessageBird API
     const smsResult = await new Promise((resolve, reject) => {
       const req = https.request(options, (res) => {
         let data = '';
@@ -106,7 +102,7 @@ Please contact customer within 24 hours.`;
               resolve({ raw: data });
             }
           } else {
-            reject(new Error(`Plivo API error: ${res.statusCode} - ${data}`));
+            reject(new Error(`MessageBird API error: ${res.statusCode} - ${data}`));
           }
         });
       });
@@ -119,7 +115,7 @@ Please contact customer within 24 hours.`;
       req.end();
     });
 
-    console.log('SMS sent successfully via Plivo:', smsResult);
+    console.log('SMS sent successfully via MessageBird:', smsResult);
 
     return {
       statusCode: 200,
@@ -130,7 +126,7 @@ Please contact customer within 24 hours.`;
       body: JSON.stringify({
         success: true,
         message: 'Quote request confirmed and SMS sent',
-        messageId: smsResult.message_uuid?.[0] || smsResult.message_uuid
+        messageId: smsResult.id
       })
     };
 
